@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import EmailApp from './EmailApp';
+import SupabaseApp from './SupabaseApp';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -11,6 +11,6 @@ const root = ReactDOM.createRoot(rootElement);
 
 root.render(
   <React.StrictMode>
-    <EmailApp />
+    <SupabaseApp />
   </React.StrictMode>
 );
