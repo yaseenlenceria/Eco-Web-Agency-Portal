@@ -5,14 +5,13 @@ import Dashboard from './components/Dashboard';
 import ClientList from './components/ClientList';
 import ProjectBoard from './components/ProjectBoard';
 import Settings from './components/Settings';
-import Login from './components/Login';
+import SimpleLogin from './components/SimpleLogin';
 import AuthDebug from './components/AuthDebug';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ConvexClientProvider } from './contexts/ConvexProvider';
+import { SimpleAuthProvider, useSimpleAuth } from './contexts/SimpleAuthContext';
 import { LayoutDashboard, Users, Briefcase, Settings as SettingsIcon, Menu, X, Leaf, LogOut } from 'lucide-react';
 
-const AppContent: React.FC = () => {
-  const { user, loading, logout } = useAuth();
+const SimpleAppContent: React.FC = () => {
+  const { user, loading, logout } = useSimpleAuth();
   const [activeView, setActiveView] = useState<ViewState>('DASHBOARD');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
@@ -28,7 +27,7 @@ const AppContent: React.FC = () => {
   }
 
   if (!user) {
-    return <Login />;
+    return <SimpleLogin />;
   }
 
   // Global State
@@ -58,8 +57,8 @@ const AppContent: React.FC = () => {
         setSidebarOpen(false);
       }}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group
-        ${activeView === view 
-          ? 'bg-teal-600 text-white shadow-md shadow-teal-900/20' 
+        ${activeView === view
+          ? 'bg-teal-600 text-white shadow-md shadow-teal-900/20'
           : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
       `}
     >
@@ -70,10 +69,10 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
-      
+
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/80 z-20 md:hidden backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
@@ -94,7 +93,7 @@ const AppContent: React.FC = () => {
               <p className="text-xs text-teal-400 font-medium tracking-widest uppercase">Portal</p>
             </div>
           </div>
-          
+
           <nav className="space-y-2">
             <NavItem view="DASHBOARD" icon={LayoutDashboard} label="Dashboard" />
             <NavItem view="CLIENTS" icon={Users} label="Clients" />
@@ -105,16 +104,16 @@ const AppContent: React.FC = () => {
 
         <div className="pt-6 border-t border-slate-800">
           <div className="flex items-center gap-3 px-2">
-            {user.avatar ? (
-              <img src={user.avatar} alt={user.name || 'User'} className="w-8 h-8 rounded-full" />
+            {user.photoURL ? (
+              <img src={user.photoURL} alt={user.displayName || 'User'} className="w-8 h-8 rounded-full" />
             ) : (
               <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300 border border-slate-600">
-                {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+                {user.displayName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
               </div>
             )}
             <div className="flex-1">
-              <p className="text-sm font-medium text-slate-200">{user.name || user.email}</p>
-              <p className="text-xs text-slate-500">{user.role || 'User'}</p>
+              <p className="text-sm font-medium text-slate-200">{user.displayName || user.email}</p>
+              <p className="text-xs text-slate-500">Authenticated User</p>
             </div>
             <button
               onClick={logout}
@@ -175,14 +174,12 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
+const SimpleApp: React.FC = () => {
   return (
-    <ConvexClientProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ConvexClientProvider>
+    <SimpleAuthProvider>
+      <SimpleAppContent />
+    </SimpleAuthProvider>
   );
 };
 
-export default App;
+export default SimpleApp;

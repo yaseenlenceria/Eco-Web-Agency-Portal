@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useConvex, useConvexQuery } from 'convex/react';
+import { useConvex } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
@@ -15,6 +15,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  error: string | null;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
@@ -25,63 +26,77 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const convex = useConvex();
 
   useEffect(() => {
-    // Check for existing session
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      validateSession(token);
-    } else {
-      setLoading(false);
-    }
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Check for existing session
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          const userData = await convex.query(api.auth.validateSession, { token });
+          if (userData && isMounted) {
+            setUser(userData);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        localStorage.removeItem('authToken');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
 
     // Listen for auth state changes
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        // Create or get user in Convex
-        const userId = await convex.mutation(api.auth.createUser, {
-          email: firebaseUser.email!,
-          name: firebaseUser.displayName || undefined,
-          avatar: firebaseUser.photoURL || undefined,
-          googleId: firebaseUser.uid,
-        });
+      if (!isMounted) return;
 
-        // Create session
-        const sessionToken = generateSessionToken();
-        await convex.mutation(api.auth.createSession, {
-          userId,
-          token: sessionToken,
-        });
+      try {
+        if (firebaseUser) {
+          // Create or get user in Convex
+          const userId = await convex.mutation(api.auth.createUser, {
+            email: firebaseUser.email!,
+            name: firebaseUser.displayName || undefined,
+            avatar: firebaseUser.photoURL || undefined,
+            googleId: firebaseUser.uid,
+          });
 
-        localStorage.setItem('authToken', sessionToken);
-        const userData = await convex.query(api.auth.getUserById, { userId });
-        setUser(userData);
-      } else {
-        setUser(null);
+          // Create session
+          const sessionToken = generateSessionToken();
+          await convex.mutation(api.auth.createSession, {
+            userId,
+            token: sessionToken,
+          });
+
+          localStorage.setItem('authToken', sessionToken);
+          const userData = await convex.query(api.auth.getUserById, { userId });
+          if (userData && isMounted) {
+            setUser(userData);
+            setError(null);
+          }
+        } else {
+          setUser(null);
+          localStorage.removeItem('authToken');
+        }
+      } catch (error) {
+        console.error('Error in auth state change:', error);
+        setError('Authentication error occurred');
         localStorage.removeItem('authToken');
+      } finally {
+        if (isMounted) setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [convex]);
+    initializeAuth();
 
-  const validateSession = async (token: string) => {
-    try {
-      const userData = await convex.query(api.auth.validateSession, { token });
-      if (userData) {
-        setUser(userData);
-      } else {
-        localStorage.removeItem('authToken');
-      }
-    } catch (error) {
-      console.error('Error validating session:', error);
-      localStorage.removeItem('authToken');
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [convex]);
 
   const generateSessionToken = () => {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -89,11 +104,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
+      setError(null);
+      setLoading(true);
       const provider = new GoogleAuthProvider();
+      // Add scopes to get user info
+      provider.addScope('email');
+      provider.addScope('profile');
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing in with Google:', error);
+      setError(error.message || 'Failed to sign in with Google');
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,6 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value: AuthContextType = {
     user,
     loading,
+    error,
     signInWithGoogle,
     logout,
     isAuthenticated: !!user,

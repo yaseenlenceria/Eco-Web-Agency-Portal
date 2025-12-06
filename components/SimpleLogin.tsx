@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useSimpleAuth } from '../contexts/SimpleAuthContext';
 
-const Login: React.FC = () => {
-  const { signInWithGoogle, loading, error } = useAuth();
+const SimpleLogin: React.FC = () => {
+  const { signInWithGoogle, loading, error } = useSimpleAuth();
   const [loginError, setLoginError] = useState<string | null>(null);
 
   return (
@@ -58,12 +58,12 @@ const Login: React.FC = () => {
         </div>
 
         <div className="mt-6 text-center text-xs text-gray-500">
-          <p>Make sure you have configured Firebase authentication</p>
-          <p className="mt-1">Check README-AUTH-SETUP.md for instructions</p>
+          <p>Simple Firebase Authentication (No Convex)</p>
+          <p className="mt-1">Configure Firebase to enable login</p>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default SimpleLogin;
