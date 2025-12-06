@@ -6,21 +6,21 @@ import type { FunctionReference } from "convex/server";
 
 export const api = {
   auth: {
-    createUser: {
-      args: { email: "string", name: "string?", avatar: "string?", googleId: "string" },
+    registerUser: {
+      args: { email: "string", password: "string", name: "string?" },
       returns: "id",
     } as FunctionReference<"mutation", "public", "auth", {
       email: string;
+      password: string;
       name?: string;
-      avatar?: string;
-      googleId: string;
     }, string>,
-    getUserByGoogleId: {
-      args: { googleId: "string" },
-      returns: "object | null",
-    } as FunctionReference<"query", "public", "auth", {
-      googleId: string;
-    }, any | null>,
+    loginUser: {
+      args: { email: "string", password: "string" },
+      returns: "id",
+    } as FunctionReference<"mutation", "public", "auth", {
+      email: string;
+      password: string;
+    }, string>,
     getUserById: {
       args: { userId: "id" },
       returns: "object | null",

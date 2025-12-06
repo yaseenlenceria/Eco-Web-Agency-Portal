@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { ViewState, Client, Project, ServiceOption, ProjectStatus } from './types';
 import { MOCK_CLIENTS, MOCK_PROJECTS, INITIAL_SERVICES } from './constants';
 import Dashboard from './components/Dashboard';
@@ -6,29 +6,31 @@ import ClientList from './components/ClientList';
 import ProjectBoard from './components/ProjectBoard';
 import Settings from './components/Settings';
 import EmailLogin from './components/EmailLogin';
+import FallbackLogin from './components/FallbackLogin';
 import { EmailAuthProvider, useEmailAuth } from './contexts/EmailAuthContext';
 import { ConvexClientProvider } from './contexts/ConvexProvider';
 import { LayoutDashboard, Users, Briefcase, Settings as SettingsIcon, Menu, X, Leaf, LogOut } from 'lucide-react';
 
 const EmailAppContent: React.FC = () => {
-  const { user, loading, logout } = useEmailAuth();
-  const [activeView, setActiveView] = useState<ViewState>('DASHBOARD');
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
+  try {
+    const { user, loading, logout } = useEmailAuth();
+    const [activeView, setActiveView] = useState<ViewState>('DASHBOARD');
+    const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (!user) {
-    return <EmailLogin />;
-  }
+    if (!user) {
+      return <EmailLogin />;
+    }
 
   // Global State
   const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS);
@@ -167,6 +169,10 @@ const EmailAppContent: React.FC = () => {
       </main>
     </div>
   );
+  } catch (error) {
+    console.error('Convex error, showing fallback:', error);
+    return <FallbackLogin />;
+  }
 };
 
 const EmailApp: React.FC = () => {
