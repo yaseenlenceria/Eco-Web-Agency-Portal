@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
-import SimpleApp from './SimpleApp';
+import EmailApp from './EmailApp';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -10,12 +9,8 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 
-// Toggle between App (with Convex) and SimpleApp (Firebase only)
-// Use SimpleApp for testing if Convex is not configured
-const useSimpleAuth = true; // Set to false when Convex is properly configured
-
 root.render(
   <React.StrictMode>
-    {useSimpleAuth ? <SimpleApp /> : <App />}
+    <EmailApp />
   </React.StrictMode>
 );

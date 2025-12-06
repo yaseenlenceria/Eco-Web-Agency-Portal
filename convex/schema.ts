@@ -6,13 +6,12 @@ export default defineSchema({
     email: v.string(),
     name: v.optional(v.string()),
     avatar: v.optional(v.string()),
-    googleId: v.string(),
+    password: v.string(),
     createdAt: v.number(),
     lastLogin: v.number(),
     role: v.optional(v.string()),
     preferences: v.optional(v.any()),
-  }).index("by_googleId", ["googleId"])
-    .index("by_email", ["email"]),
+  }).index("by_email", ["email"]),
 
   sessions: defineTable({
     userId: v.id("users"),

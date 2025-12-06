@@ -1,31 +1,43 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-export const createUser = mutation({
+// Helper function to hash password (simple implementation)
+async function hashPassword(password: string): Promise<string> {
+  // In production, use bcrypt or similar
+  return btoa(password + "secret_salt");
+}
+
+// Helper function to verify password
+async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  return btoa(password + "secret_salt") === hashedPassword;
+}
+
+export const registerUser = mutation({
   args: {
     email: v.string(),
+    password: v.string(),
     name: v.optional(v.string()),
-    avatar: v.optional(v.string()),
-    googleId: v.string(),
   },
   handler: async (ctx, args) => {
-    const now = Date.now();
-
     // Check if user already exists
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_googleId", (q) => q.eq("googleId", args.googleId))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     if (existingUser) {
-      // Update last login
-      await ctx.db.patch(existingUser._id, { lastLogin: now });
-      return existingUser._id;
+      throw new Error("User with this email already exists");
     }
 
+    // Hash password
+    const hashedPassword = await hashPassword(args.password);
+
     // Create new user
+    const now = Date.now();
     const userId = await ctx.db.insert("users", {
-      ...args,
+      email: args.email,
+      password: hashedPassword,
+      name: args.name,
       createdAt: now,
       lastLogin: now,
       role: "user",
@@ -35,15 +47,32 @@ export const createUser = mutation({
   },
 });
 
-export const getUserByGoogleId = query({
-  args: { googleId: v.string() },
+export const loginUser = mutation({
+  args: {
+    email: v.string(),
+    password: v.string(),
+  },
   handler: async (ctx, args) => {
+    // Find user by email
     const user = await ctx.db
       .query("users")
-      .withIndex("by_googleId", (q) => q.eq("googleId", args.googleId))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
-    return user;
+    if (!user) {
+      throw new Error("Invalid email or password");
+    }
+
+    // Verify password
+    const isValidPassword = await verifyPassword(args.password, user.password);
+    if (!isValidPassword) {
+      throw new Error("Invalid email or password");
+    }
+
+    // Update last login
+    await ctx.db.patch(user._id, { lastLogin: Date.now() });
+
+    return user._id;
   },
 });
 
