@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
+import SupabaseDebug from './SupabaseDebug';
 
 const SupabaseLogin: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -15,18 +16,29 @@ const SupabaseLogin: React.FC = () => {
     e.preventDefault();
     setFormError(null);
 
+    if (!formData.email || !formData.password) {
+      setFormError('Please enter both email and password');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setFormError('Password must be at least 6 characters long');
+      return;
+    }
+
     try {
       if (isRegistering) {
+        console.log('Registering user...');
         await signUp(formData.email, formData.password, formData.name || undefined);
-        if (error) {
-          setFormError(error);
-        } else {
-          setFormError('Please check your email to confirm your account!');
-        }
+        // Success message will be handled by the auth context
+        console.log('Registration successful!');
       } else {
+        console.log('Signing in user...');
         await signIn(formData.email, formData.password);
+        console.log('Sign in successful!');
       }
     } catch (err: any) {
+      console.error('Authentication error:', err);
       setFormError(err.message || 'Authentication failed');
     }
   };
@@ -140,6 +152,20 @@ const SupabaseLogin: React.FC = () => {
         <div className="mt-6 text-center text-xs text-gray-500">
           <p>✨ Powered by Supabase</p>
           <p className="mt-1">Secure Authentication & Database</p>
+        </div>
+      </div>
+
+      {/* Debug Information */}
+      <div className="mt-4 max-w-md mx-auto">
+        <SupabaseDebug />
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg text-sm mt-4">
+          <strong>⚠️ Setup Required:</strong>
+          <ol className="mt-2 list-decimal list-inside space-y-1">
+            <li>Go to your Supabase dashboard</li>
+            <li>Navigate to SQL Editor</li>
+            <li>Run the schema from `supabase/schema.sql`</li>
+            <li>Disable email confirmations in Auth Settings for testing</li>
+          </ol>
         </div>
       </div>
     </div>

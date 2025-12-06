@@ -87,6 +87,8 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       setError(null);
       setLoading(true);
 
+      console.log('Attempting to sign up:', { email, name });
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -97,10 +99,20 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase signup error:', error);
+        throw error;
+      }
 
-      // If email confirmation is required
-      if (data.user && !data.session) {
+      console.log('Signup response:', data);
+
+      // If email confirmation is disabled, user will be logged in immediately
+      if (data.user && data.session) {
+        // User is signed in
+        setUser(data.user);
+        setSession(data.session);
+      } else if (data.user && !data.session) {
+        // Email confirmation required
         setError('Please check your email to confirm your account');
       }
     } catch (error: any) {
@@ -117,12 +129,25 @@ export const SupabaseAuthProvider: React.FC<{ children: ReactNode }> = ({ childr
       setError(null);
       setLoading(true);
 
+      console.log('Attempting to sign in:', email);
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase signin error:', error);
+        throw error;
+      }
+
+      console.log('Signin response:', data);
+
+      // User is signed in
+      if (data.user && data.session) {
+        setUser(data.user);
+        setSession(data.session);
+      }
     } catch (error: any) {
       console.error('Sign in error:', error);
       setError(error.message || 'Failed to sign in');
